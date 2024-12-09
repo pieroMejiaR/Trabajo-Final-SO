@@ -1,6 +1,8 @@
 #include "irq.h"
 #include "scheduler.h"
+#include "gestorMemoria.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 int main() {
     // Inicializa el sistema de interrupciones
@@ -28,6 +30,41 @@ int main() {
             irq_handle(0); // Simula interrupción del temporizador
         }
     }
+
+    //PRUEBA DE GESTOR DE MEMORIA
+
+    const int TAMANO_MEMORIA = 64;  // En KB
+    const int TAMANO_PAGINA = 4;   // En KB
+
+    GestorMemoria* gestor = inicializar_gestor(TAMANO_MEMORIA, TAMANO_PAGINA);
+
+    // Crear procesos
+    process_t* proceso1 = create_process(1, "Proceso1");
+    process_t* proceso2 = create_process(2, "Proceso2");
+    process_t* proceso3 = create_process(3, "Proceso3");
+
+    // Simular asignaciones
+    asignar_memoria(gestor, proceso1, 10); // Proceso 1 necesita 10 KB
+    asignar_memoria(gestor, proceso2, 20); // Proceso 2 necesita 20 KB
+    mostrar_estado_memoria(gestor);
+
+    // Liberar memoria del proceso 1
+    liberar_memoria(gestor, proceso1);
+    mostrar_estado_memoria(gestor);
+
+    // Asignar memoria al proceso 3
+    asignar_memoria(gestor, proceso3, 15);
+    mostrar_estado_memoria(gestor);
+
+    // Liberar memoria dinámica
+    liberar_memoria(gestor, proceso2);
+    liberar_memoria(gestor, proceso3);
+
+    free(proceso1);
+    free(proceso2);
+    free(proceso3);
+
+    liberar_gestor(gestor);
 
     return 0;
 }

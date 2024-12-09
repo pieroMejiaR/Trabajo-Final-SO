@@ -1,7 +1,7 @@
 #ifndef OS_EVENT_H
 #define OS_EVENT_H
 
-#include "procces.h"
+#include "process.h"
 
 // Estructura del evento del sistema
 typedef struct os_event {
