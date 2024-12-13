@@ -56,7 +56,7 @@ def create_styled_button(parent, text, command):
 def open_process_scheduler():
     scheduler_window = tk.Toplevel()
     scheduler_window.title("Planificación de Procesos")
-    scheduler_window.geometry("600x700")
+    scheduler_window.geometry("800x700")
     scheduler_window.configure(bg=COLORS['background'])
     
     # Frame principal
@@ -117,7 +117,7 @@ def open_process_scheduler():
                 text_widget.insert(tk.END, f"❌ Error: Memoria insuficiente para '{name}'\n\n")
         else:
             text_widget.insert(tk.END, "❌ Error: Datos inválidos para el proceso\n\n")
-
+    
     def execute_fifo():
         text_widget.delete(1.0, tk.END)
         text_widget.insert(tk.END, "📊 Planificación FIFO:\n" + "="*40 + "\n\n")
@@ -166,11 +166,35 @@ def open_process_scheduler():
             text_widget.insert(tk.END, f"📈 Promedios:\n")
             text_widget.insert(tk.END, f"  • Espera: {total_wait_time/n:.2f}\n")
             text_widget.insert(tk.END, f"  • Retorno: {total_turnaround_time/n:.2f}\n")
+    def execute_rr():
+        text_widget.delete(1.0, tk.END)
+        text_widget.insert(tk.END, "Planificación Round Robin:\n")
+        quantum = simpledialog.askinteger("Round Robin", "Quantum:")
+        if quantum:
+            from collections import deque
+            queue = deque(scheduler.processes)
+            current_time = 0
 
+            while queue:
+                process = queue.popleft()
+                if process["burst_time"] > quantum:
+                    current_time += quantum
+                    process["burst_time"] -= quantum
+                    queue.append(process)
+                else:
+                    current_time += process["burst_time"]
+                    process["burst_time"] = 0
+                    resultado = f"Proceso {process['name']} -> Completado en el tiempo: {current_time}\n"
+                    text_widget.insert(tk.END, resultado)
+        else:
+            text_widget.insert(tk.END, "Error: Quantum inválido.\n")
     # Botones con nuevo estilo
     add_btn = create_styled_button(button_frame, "Agregar Proceso", add_process)
     add_btn.pack(side='left', padx=5)
     
+    fifo_btn = create_styled_button(button_frame, "Ejecutar RR", execute_rr)
+    fifo_btn.pack(side='left', padx=5)
+
     fifo_btn = create_styled_button(button_frame, "Ejecutar FIFO", execute_fifo)
     fifo_btn.pack(side='left', padx=5)
     
