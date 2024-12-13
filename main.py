@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+from tkinter import simpledialog
 import os
 from scheduler import ProcessScheduler
 from file_system import FileSystem
@@ -57,7 +57,7 @@ def create_styled_button(parent, text, command):
 def open_process_scheduler():
     scheduler_window = tk.Toplevel()
     scheduler_window.title("Planificación de Procesos")
-    scheduler_window.geometry("800x700")
+    scheduler_window.geometry("700x600")
     scheduler_window.configure(bg=COLORS['background'])
     
     # Frame principal
@@ -80,7 +80,7 @@ def open_process_scheduler():
     scrollbar.pack(side='right', fill='y')
     
     text_widget = tk.Text(text_frame,
-                         height=20,
+                         height=10,
                          width=60,
                          font=STYLES['text'],
                          bg=COLORS['text_area'],
@@ -406,11 +406,14 @@ def open_file_system():
         btn = create_styled_button(button_frame, text, command)
         btn.pack(side='left', padx=5, pady=5)
 """fin"""
+
 # Crear ventana principal
 root = tk.Tk()
 root.title("Sistema Operativo Simulado")
-root.geometry("800x600")
+root.geometry("500x400")
 root.configure(bg=COLORS['background'])
+# Forzar a las ventanas emergentes a estar al frente
+
 
 # Frame principal
 main_frame = tk.Frame(root, bg=COLORS['background'])
@@ -423,7 +426,9 @@ title_label = tk.Label(main_frame,
                       bg=COLORS['background'],
                       fg=COLORS['text'])
 title_label.pack(pady=20)
-
+def raise_above_all(window):
+    window.attributes('-topmost', 1)
+    window.attributes('-topmost', 0)
 # Botón principal
 scheduler_btn = create_styled_button(main_frame, "Abrir Planificador de Procesos", open_process_scheduler)
 memory_btn = create_styled_button(main_frame, "Administración de Memoria", open_memory_manager)
@@ -431,5 +436,4 @@ file_btn = create_styled_button(main_frame, "Sistema de Archivos (Físico)", ope
 scheduler_btn.pack(pady=10)
 memory_btn.pack(pady=10)
 file_btn.pack(pady=10)
-
 root.mainloop()
