@@ -5,7 +5,6 @@ class MemoryManager:
         self.page_size = page_size
         self.pages = [-1] * (memory_size // page_size)
         self.page_queue = []  # Para FIFO
-        self.page_access = {}  # Para LRU
 
     def allocate(self, process_id, process_size):
         """Asigna memoria para un proceso si hay suficiente espacio."""
@@ -47,9 +46,3 @@ class MemoryManager:
             self.page_queue.append(process_id)
             self.page_access[process_id] = evict_index
             print(f"Page {page_number} of Process {evicted} evicted. Loaded Process {process_id}.")
-
-    def display_memory(self):
-        """Muestra el estado actual de la memoria."""
-        print("\nMemory State:")
-        for i, process in enumerate(self.pages):
-            print(f"Frame {i}: {'Empty' if process == -1 else f'Process {process}'}")
