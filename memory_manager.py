@@ -61,5 +61,6 @@ class MemoryManager:
                     self.pages[i] = -1  # Libera el marco
 
             print(f"Proceso {evicted_process_id} expulsado para liberar espacio.")
+            return evicted_process_id
 
         print(f"Espacio liberado para el proceso {process.name}.")

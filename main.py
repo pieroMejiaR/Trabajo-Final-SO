@@ -123,9 +123,10 @@ def open_process_scheduler():
                 text_widget.insert(tk.END, f"  → Prioridad: {priority}\n\n")
             else:
                 # Manejar el fallo de memoria utilizando FIFO
-                memory_manager.handle_page_fault_fifo(new_process)
+                evicted_process_id = memory_manager.handle_page_fault_fifo(new_process)
                 if memory_manager.allocate(new_process):
                     scheduler.add_process(process_id, process_size, name, burst_time, priority)
+                    scheduler.remove_process(evicted_process_id)
                     text_widget.insert(tk.END, f"✓ Proceso '{name}' agregado después de liberar memoria con FIFO\n")
                     text_widget.insert(tk.END, f"  → ID: {process_id}\n")
                     text_widget.insert(tk.END, f"  → Tamaño: {process_size} KB\n")
@@ -190,21 +191,35 @@ def open_process_scheduler():
         text_widget.delete(1.0, tk.END)
         text_widget.insert(tk.END, "Planificación Round Robin:\n")
         quantum = simpledialog.askinteger("Round Robin", "Quantum:")
+        
         if quantum:
             from collections import deque
-            queue = deque(scheduler.processes)
+            # Crear copias independientes de los procesos
+            process_copies = [
+                {
+                    "name": process.name,
+                    "burst_time": process.burst_time,
+                    "original_burst_time": process.burst_time,
+                    "id": process.process_id
+                } for process in scheduler.processes
+            ]
+            queue = deque(process_copies)
+            
             current_time = 0
 
             while queue:
                 process = queue.popleft()
-                if process.burst_time > quantum:
+                if process["burst_time"] > quantum:
                     current_time += quantum
-                    process.burst_time -= quantum
+                    process["burst_time"] -= quantum
                     queue.append(process)
                 else:
-                    current_time += process.burst_time
-                    process.burst_time = 0
-                    resultado = f"Proceso {process.name} -> Completado en el tiempo: {current_time}\n"
+                    current_time += process["burst_time"]
+                    process["burst_time"] = 0
+                    resultado = (
+                        f"Proceso {process['name']} (ID: {process['id']}) -> "
+                        f"Completado en el tiempo: {current_time}\n"
+                    )
                     text_widget.insert(tk.END, resultado)
         else:
             text_widget.insert(tk.END, "Error: Quantum inválido.\n")
