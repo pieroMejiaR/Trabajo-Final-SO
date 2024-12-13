@@ -4,6 +4,7 @@ import os
 from scheduler import ProcessScheduler
 from file_system import FileSystem
 from memory_manager import MemoryManager
+from process import Process
 
 # Instancias globales
 scheduler = ProcessScheduler()
@@ -104,19 +105,37 @@ def open_process_scheduler():
         text_widget.insert(tk.END, memoria_estado)
 
     def add_process():
+        process_id = simpledialog.askstring("Agregar Proceso", "Id de proceso:")
         name = simpledialog.askstring("Agregar Proceso", "Nombre del proceso:")
         burst_time = simpledialog.askinteger("Agregar Proceso", "Tiempo de ráfaga:")
         priority = simpledialog.askinteger("Agregar Proceso", "Prioridad:")
-        if name and burst_time and priority is not None:
-            if memory_manager.allocate(name, burst_time):
-                scheduler.add_process(name, burst_time, priority)
+        process_size = simpledialog.askinteger("Agregar Proceso", "Tamaño del proceso (en KB):")
+
+        if name and burst_time and priority is not None and process_size is not None:
+            new_process = Process(process_id, process_size, name, burst_time, priority)
+
+            if memory_manager.allocate(new_process):
+                scheduler.add_process(process_id, process_size, name, burst_time, priority)
                 text_widget.insert(tk.END, f"✓ Proceso '{name}' agregado exitosamente\n")
+                text_widget.insert(tk.END, f"  → ID: {process_id}\n")
+                text_widget.insert(tk.END, f"  → Tamaño: {process_size} KB\n")
                 text_widget.insert(tk.END, f"  → Tiempo de ráfaga: {burst_time}\n")
                 text_widget.insert(tk.END, f"  → Prioridad: {priority}\n\n")
             else:
-                text_widget.insert(tk.END, f"❌ Error: Memoria insuficiente para '{name}'\n\n")
+                # Manejar el fallo de memoria utilizando FIFO
+                memory_manager.handle_page_fault_fifo(new_process)
+                if memory_manager.allocate(new_process):
+                    scheduler.add_process(process_id, process_size, name, burst_time, priority)
+                    text_widget.insert(tk.END, f"✓ Proceso '{name}' agregado después de liberar memoria con FIFO\n")
+                    text_widget.insert(tk.END, f"  → ID: {process_id}\n")
+                    text_widget.insert(tk.END, f"  → Tamaño: {process_size} KB\n")
+                    text_widget.insert(tk.END, f"  → Tiempo de ráfaga: {burst_time}\n")
+                    text_widget.insert(tk.END, f"  → Prioridad: {priority}\n\n")
+                else:
+                    text_widget.insert(tk.END, f"❌ Error: Memoria insuficiente para '{name}' incluso después de liberar espacio con FIFO\n\n")
         else:
             text_widget.insert(tk.END, "❌ Error: Datos inválidos para el proceso\n\n")
+
     
     def execute_fifo():
         text_widget.delete(1.0, tk.END)
@@ -127,13 +146,13 @@ def open_process_scheduler():
 
         for process in scheduler.processes:
             wait_time = current_time
-            turnaround_time = wait_time + process["burst_time"]
+            turnaround_time = wait_time + process.burst_time
             total_wait_time += wait_time
             total_turnaround_time += turnaround_time
-            text_widget.insert(tk.END, f"→ Proceso {process['name']}:\n")
+            text_widget.insert(tk.END, f"→ Proceso {process.name}:\n")
             text_widget.insert(tk.END, f"  • Tiempo de espera: {wait_time}\n")
             text_widget.insert(tk.END, f"  • Tiempo de retorno: {turnaround_time}\n\n")
-            current_time += process["burst_time"]
+            current_time += process.burst_time
 
         n = len(scheduler.processes)
         if n > 0:
@@ -145,20 +164,20 @@ def open_process_scheduler():
     def execute_sjf():
         text_widget.delete(1.0, tk.END)
         text_widget.insert(tk.END, "📊 Planificación SJF:\n" + "="*40 + "\n\n")
-        sorted_processes = sorted(scheduler.processes, key=lambda x: x["burst_time"])
+        sorted_processes = sorted(scheduler.processes, key=lambda x: x.burst_time)
         total_wait_time = 0
         total_turnaround_time = 0
         current_time = 0
 
         for process in sorted_processes:
             wait_time = current_time
-            turnaround_time = wait_time + process["burst_time"]
+            turnaround_time = wait_time + process.burst_time
             total_wait_time += wait_time
             total_turnaround_time += turnaround_time
-            text_widget.insert(tk.END, f"→ Proceso {process['name']}:\n")
+            text_widget.insert(tk.END, f"→ Proceso {process.name}:\n")
             text_widget.insert(tk.END, f"  • Tiempo de espera: {wait_time}\n")
             text_widget.insert(tk.END, f"  • Tiempo de retorno: {turnaround_time}\n\n")
-            current_time += process["burst_time"]
+            current_time += process.burst_time
 
         n = len(sorted_processes)
         if n > 0:
@@ -166,6 +185,7 @@ def open_process_scheduler():
             text_widget.insert(tk.END, f"📈 Promedios:\n")
             text_widget.insert(tk.END, f"  • Espera: {total_wait_time/n:.2f}\n")
             text_widget.insert(tk.END, f"  • Retorno: {total_turnaround_time/n:.2f}\n")
+
     def execute_rr():
         text_widget.delete(1.0, tk.END)
         text_widget.insert(tk.END, "Planificación Round Robin:\n")
@@ -177,17 +197,18 @@ def open_process_scheduler():
 
             while queue:
                 process = queue.popleft()
-                if process["burst_time"] > quantum:
+                if process.burst_time > quantum:
                     current_time += quantum
-                    process["burst_time"] -= quantum
+                    process.burst_time -= quantum
                     queue.append(process)
                 else:
-                    current_time += process["burst_time"]
-                    process["burst_time"] = 0
-                    resultado = f"Proceso {process['name']} -> Completado en el tiempo: {current_time}\n"
+                    current_time += process.burst_time
+                    process.burst_time = 0
+                    resultado = f"Proceso {process.name} -> Completado en el tiempo: {current_time}\n"
                     text_widget.insert(tk.END, resultado)
         else:
             text_widget.insert(tk.END, "Error: Quantum inválido.\n")
+
     # Botones con nuevo estilo
     add_btn = create_styled_button(button_frame, "Agregar Proceso", add_process)
     add_btn.pack(side='left', padx=5)
@@ -249,10 +270,19 @@ def open_memory_manager():
     # Función para mostrar el estado de la memoria
     def show_memory_state():
         text_widget.delete(1.0, tk.END)  # Limpia el área de texto
-        text_widget.insert(tk.END, "Estado de Memoria:\n")
-        for i, process in enumerate(memory_manager.pages):
-            state = f"Frame {i}: {'Vacío' if process == -1 else f'Proceso {process}'}\n"
+        text_widget.insert(tk.END, "Estado de Memoria:\n" + "=" * 40 + "\n")
+
+        for i, process_id in enumerate(memory_manager.pages):
+            if process_id == -1:
+                state = f"Frame {i}: Vacío\n"
+            else:
+                # Busca el nombre del proceso asociado al ID
+                process = next((p for p in scheduler.processes if p.process_id == process_id), None)
+                state = f"Frame {i}: Proceso {process.name if process else 'Desconocido'}\n"
+
             text_widget.insert(tk.END, state)
+
+        text_widget.insert(tk.END, "=" * 40 + "\n")
     
     # Botones
     add_btn = create_styled_button(button_frame, "Mostrar Estado de Memoria", show_memory_state)
