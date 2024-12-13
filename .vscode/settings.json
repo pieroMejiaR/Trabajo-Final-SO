@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "process.h": "c",
-        "os_event.h": "c",
-        "stdlib.h": "c",
-        "procces.h": "c",
-        "scheduler.h": "c"
-    }
-}
