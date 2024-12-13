@@ -29,23 +29,6 @@ class MemoryManager:
         print(f"No hay suficiente espacio para el proceso {process.name}.")
         return False  # No hay espacio suficiente
 
-    def load_page(self, process: Process, page_number):
-        """Carga una página en memoria con manejo de reemplazo."""
-        if process.process_id in self.pages:
-            print(f"Page {page_number} of Process {process.name} already in memory.")
-            return
-
-        if -1 in self.pages:
-            # Espacio disponible
-            free_index = self.pages.index(-1)
-            self.pages[free_index] = process.process_id
-            self.page_queue.append(process.process_id)
-            self.page_access[process.process_id] = free_index
-            print(f"Loaded Page {page_number} of Process {process.name} into Frame {free_index}.")
-        else:
-            # Reemplazo FIFO
-            self.handle_page_fault_fifo(process, page_number)
-
     def handle_page_fault_fifo(self, process: Process):
         """
         Maneja un fallo de página utilizando la estrategia FIFO.
